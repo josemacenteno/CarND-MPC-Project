@@ -16,6 +16,7 @@ using json = nlohmann::json;
 constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
+double mph2mps(double x) { return x * 3600 / 1609; }
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
@@ -80,8 +81,10 @@ int main() {
 
   // MPC is initialized here!
   MPC mpc;
+  const double lag = 0.1;
+  vector<double> actuators = {0,0};
 
-  h.onMessage([&mpc](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+  h.onMessage([&actuators, &lag, &mpc](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -100,7 +103,9 @@ int main() {
           double px = j[1]["x"];
           double py = j[1]["y"];
           double psi = j[1]["psi"];
-          double v = j[1]["speed"];
+          double v = mph2mps(j[1]["speed"]);
+          double delta = actuators[0];
+          double a = actuators[1];
 
           /*
           * TODO: Calculate steering angle and throttle using MPC.
@@ -111,7 +116,7 @@ int main() {
           map2car(ptsx, ptsy, px, py, psi);
 
           const int poly_order = 3;
-          Eigen::VectorXd state(6), coeffs(poly_order);
+          Eigen::VectorXd state(6), coeffs(poly_order), act_init(3);
 
           // x0, y0, psi0 are 0, 0, 0 in car coordinates
           // The cross track error is calculated by evaluating at polynomial at x0, f(0)
@@ -122,12 +127,17 @@ int main() {
           double epsi = 0 - des_psi;
 
           state << px,py,psi,v,cte,epsi;
+          act_init << delta, a, lag;
+
+
           Eigen::Map<Eigen::VectorXd> xvals(ptsx.data(), ptsx.size());
           Eigen::Map<Eigen::VectorXd> yvals(ptsy.data(), ptsy.size());
           coeffs = polyfit(xvals, yvals, poly_order);
-          vector<double> results = mpc.Solve(state, coeffs);
-          double steer_value = -results[0]/ deg2rad(25);
-          double throttle_value = results[1];
+
+          actuators = mpc.Solve(state, coeffs, act_init);
+
+          double steer_value = -actuators[0]/ deg2rad(25);
+          double throttle_value = actuators[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
