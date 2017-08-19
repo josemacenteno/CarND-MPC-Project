@@ -126,7 +126,7 @@ int main() {
           Eigen::Map<Eigen::VectorXd> yvals(ptsy.data(), ptsy.size());
           coeffs = polyfit(xvals, yvals, poly_order);
           vector<double> results = mpc.Solve(state, coeffs);
-          double steer_value = results[0]/ deg2rad(25);
+          double steer_value = -results[0]/ deg2rad(25);
           double throttle_value = results[1];
 
           json msgJson;
