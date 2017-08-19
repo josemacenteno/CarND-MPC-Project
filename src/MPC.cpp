@@ -140,7 +140,7 @@ class FG_eval {
 MPC::MPC() {}
 MPC::~MPC() {}
 
-vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
+vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs, Eigen::VectorXd act_init) {
   bool ok = true;
   typedef CPPAD_TESTVECTOR(double) Dvector;
 
@@ -150,6 +150,9 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   double v = state[3];
   double cte = state[4];
   double epsi = state[5];
+  double delta_fixed = act_init[0];
+  double a_fixed = act_init[1];
+  double actuator_lag = act_init[2];
 
   // TODO: Set the number of model variables (includes both states and inputs).
   // For example: If the state is a 6 element vector, the actuators is a 2
@@ -179,26 +182,39 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   Dvector vars_upperbound(n_vars);
   // TODO: Set lower and upper limits for variables.
 
-  // Set all non-actuators upper and lowerlimits
-  // to the max negative and positive values.
-  for (int i = 0; i < delta_start; i++) {
-    vars_lowerbound[i] = -1.0e19;
-    vars_upperbound[i] = 1.0e19;
+  // There is actuator lag, which means we can't modify actuators
+  // a period at the beginig.
+  int lag_n = (int) actuator_lag / dt;
+  for (int i = delta_start; i < delta_start + lag_n; ++i) {
+    vars_lowerbound[i] = delta_fixed;
+    vars_upperbound[i] = delta_fixed;
+    vars[i] = delta_fixed;
   }
-
+  for (int i = a_start; i < a_start + lag_n; ++i) {
+    vars_lowerbound[i] = a_fixed;
+    vars_upperbound[i] = a_fixed;
+    vars[i] = a_fixed;
+  }
   // The upper and lower limits of delta are set to -25 and 25
   // degrees (values in radians).
   // NOTE: Feel free to change this to something else.
-  for (int i = delta_start; i < a_start; i++) {
+  for (int i = delta_start + lag_n; i < a_start; i++) {
     vars_lowerbound[i] = -0.436332;
     vars_upperbound[i] = 0.436332;
   }
 
   // Acceleration/decceleration upper and lower limits.
   // NOTE: Feel free to change this to something else.
-  for (int i = a_start; i < n_vars; i++) {
+  for (int i = a_start + lag_n; i < n_vars; i++) {
     vars_lowerbound[i] = -1.0;
     vars_upperbound[i] = 1.0;
+  }
+
+  // Set all non-actuators upper and lowerlimits
+  // to the max negative and positive values.
+  for (int i = 0; i < delta_start; i++) {
+    vars_lowerbound[i] = -1.0e19;
+    vars_upperbound[i] = 1.0e19;
   }
 
   // Lower and upper limits for the constraints
@@ -222,6 +238,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   constraints_upperbound[v_start] = v;
   constraints_upperbound[cte_start] = cte;
   constraints_upperbound[epsi_start] = epsi;
+
+
 
   // Object that computes objective and constraints
   FG_eval fg_eval(coeffs);
@@ -264,6 +282,6 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   //
   // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
   // creates a 2 element double vector.
-  return {solution.x[delta_start],   solution.x[a_start]};
+  return {solution.x[delta_start + lag_n],   solution.x[a_start + lag_n]};
   // return {0.0,  1.0};
 }
