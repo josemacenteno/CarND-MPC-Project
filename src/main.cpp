@@ -140,7 +140,8 @@ int main() {
           */
 
           actuators = mpc.Solve(state, coeffs, act_init);
-          //actuators[0] = 0.0;
+          actuators[0] = -epsi/M_PI;
+          actuators[1] = 0.1;
           double steer_value = -actuators[0]/ deg2rad(25);
           double throttle_value = actuators[1];
 
@@ -151,14 +152,11 @@ int main() {
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
-          vector<double> mpc_x_vals;
-          vector<double> mpc_y_vals;
-
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
 
-          msgJson["mpc_x"] = mpc_x_vals;
-          msgJson["mpc_y"] = mpc_y_vals;
+          msgJson["mpc_x"] = mpc.mpc_x_vals;
+          msgJson["mpc_y"] = mpc.mpc_y_vals;
 
           //Display the waypoints/reference line
           vector<double> next_x_vals = ptsx;

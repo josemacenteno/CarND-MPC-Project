@@ -282,6 +282,17 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs, Eigen::
   //
   // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
   // creates a 2 element double vector.
+  
+
+  //Report the mpc predicted points after solving the system
+  mpc_x_vals.clear();
+  mpc_x_vals.clear();
+  for(int i = x_start; i < x_start + N; ++i){
+    mpc_x_vals.push_back(vars[i]);
+  }
+  for(int i = y_start; i < y_start + N; ++i){
+    mpc_y_vals.push_back(vars[i]);
+  }
   return {solution.x[delta_start + lag_n],   solution.x[a_start + lag_n]};
   // return {0.0,  1.0};
 }
