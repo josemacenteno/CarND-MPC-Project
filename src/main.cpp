@@ -65,6 +65,18 @@ Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
   return result;
 }
 
+
+void map2car(vector<double> &x_p, vector<double> &y_p, double x_car, double y_car, double theta) {
+  for(unsigned int i = 0; i < x_p.size(); ++i){
+    double x_trans = x_p[i] - x_car;
+    double y_trans = y_p[i] - y_car;
+    std::cout << x_trans << " " << x_car << " " << x_p[i] << "\t\t\t";
+    x_p[i] =  x_trans * cos(theta) + y_trans * sin(theta);
+    y_p[i] = -x_trans * sin(theta) + y_trans * cos(theta);
+  }
+  std::cout << std::endl;
+}
+
 int main() {
   uWS::Hub h;
 
@@ -98,6 +110,8 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
+          map2car(ptsx, ptsy, px, py, psi);
+          
           const int poly_order = 3;
           Eigen::VectorXd state(4), coeffs(poly_order);
           state << px,py,psi,v;
@@ -105,7 +119,7 @@ int main() {
           Eigen::Map<Eigen::VectorXd> yvals(ptsy.data(), ptsy.size());
           coeffs = polyfit(xvals, yvals, poly_order);
           vector<double> results = mpc.Solve(state, coeffs);
-          double steer_value = results[0];
+          double steer_value = results[0]/ deg2rad(25);
           double throttle_value = results[1];
 
           json msgJson;
@@ -125,8 +139,8 @@ int main() {
           msgJson["mpc_y"] = mpc_y_vals;
 
           //Display the waypoints/reference line
-          vector<double> next_x_vals;
-          vector<double> next_y_vals;
+          vector<double> next_x_vals = ptsx;
+          vector<double> next_y_vals = ptsy;
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
