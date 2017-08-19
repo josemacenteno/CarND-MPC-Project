@@ -70,11 +70,9 @@ void map2car(vector<double> &x_p, vector<double> &y_p, double x_car, double y_ca
   for(unsigned int i = 0; i < x_p.size(); ++i){
     double x_trans = x_p[i] - x_car;
     double y_trans = y_p[i] - y_car;
-    std::cout << x_trans << " " << x_car << " " << x_p[i] << "\t\t\t";
     x_p[i] =  x_trans * cos(theta) + y_trans * sin(theta);
     y_p[i] = -x_trans * sin(theta) + y_trans * cos(theta);
   }
-  std::cout << std::endl;
 }
 
 int main() {
@@ -111,10 +109,19 @@ int main() {
           *
           */
           map2car(ptsx, ptsy, px, py, psi);
-          
+
           const int poly_order = 3;
-          Eigen::VectorXd state(4), coeffs(poly_order);
-          state << px,py,psi,v;
+          Eigen::VectorXd state(6), coeffs(poly_order);
+
+          // x0, y0, psi0 are 0, 0, 0 in car coordinates
+          // The cross track error is calculated by evaluating at polynomial at x0, f(0)
+          double cte = polyeval(coeffs, 0.0) - 0.0;
+          // Due to the sign starting at 0, the orientation error is -f'(x).
+          // derivative of coeffs[0] + coeffs[1] * x -> coeffs[1]
+          double des_psi = atan(coeffs[1]);
+          double epsi = 0 - des_psi;
+
+          state << px,py,psi,v,cte,epsi;
           Eigen::Map<Eigen::VectorXd> xvals(ptsx.data(), ptsx.size());
           Eigen::Map<Eigen::VectorXd> yvals(ptsy.data(), ptsy.size());
           coeffs = polyfit(xvals, yvals, poly_order);
