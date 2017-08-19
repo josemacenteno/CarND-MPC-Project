@@ -16,7 +16,7 @@ using json = nlohmann::json;
 constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
-double mph2mps(double x) { return x * 3600 / 1609; }
+double mph2mps(double x) { return x * 1609 / 3600; }
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
@@ -107,12 +107,6 @@ int main() {
           double delta = actuators[0];
           double a = actuators[1];
 
-          /*
-          * TODO: Calculate steering angle and throttle using MPC.
-          *
-          * Both are in between [-1, 1].
-          *
-          */
           map2car(ptsx, ptsy, px, py, psi);
 
           const int poly_order = 3;
@@ -126,7 +120,7 @@ int main() {
           double des_psi = atan(coeffs[1]);
           double epsi = 0 - des_psi;
 
-          state << px,py,psi,v,cte,epsi;
+          state << px,py,0.0,v,cte,epsi;
           act_init << delta, a, lag;
 
 
@@ -134,9 +128,18 @@ int main() {
           Eigen::Map<Eigen::VectorXd> yvals(ptsy.data(), ptsy.size());
           coeffs = polyfit(xvals, yvals, poly_order);
 
+
+          /*
+          * TODO: Calculate steering angle and throttle using MPC.
+          *
+          * Both are in between [-1, 1].
+          *
+          */
+
           actuators = mpc.Solve(state, coeffs, act_init);
 
-          double steer_value = -actuators[0]/ deg2rad(25);
+          // double steer_value = -actuators[0]/ deg2rad(25);
+          double steer_value = 0.0;
           double throttle_value = actuators[1];
 
           json msgJson;
