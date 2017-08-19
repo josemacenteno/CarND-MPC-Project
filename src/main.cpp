@@ -107,10 +107,17 @@ int main() {
           double delta = actuators[0];
           double a = actuators[1];
 
-          map2car(ptsx, ptsy, px, py, psi);
-
           const int poly_order = 3;
           Eigen::VectorXd state(6), coeffs(poly_order), act_init(3);
+
+          act_init << delta, a, lag;
+
+          // Changing all the coordinates to car reference
+          map2car(ptsx, ptsy, px, py, psi);
+
+          Eigen::Map<Eigen::VectorXd> xvals(ptsx.data(), ptsx.size());
+          Eigen::Map<Eigen::VectorXd> yvals(ptsy.data(), ptsy.size());
+          coeffs = polyfit(xvals, yvals, poly_order);
 
           // x0, y0, psi0 are 0, 0, 0 in car coordinates
           // The cross track error is calculated by evaluating at polynomial at x0, f(0)
@@ -121,12 +128,8 @@ int main() {
           double epsi = 0 - des_psi;
 
           state << px,py,0.0,v,cte,epsi;
-          act_init << delta, a, lag;
 
 
-          Eigen::Map<Eigen::VectorXd> xvals(ptsx.data(), ptsx.size());
-          Eigen::Map<Eigen::VectorXd> yvals(ptsy.data(), ptsy.size());
-          coeffs = polyfit(xvals, yvals, poly_order);
 
 
           /*
@@ -137,9 +140,8 @@ int main() {
           */
 
           actuators = mpc.Solve(state, coeffs, act_init);
-
-          // double steer_value = -actuators[0]/ deg2rad(25);
-          double steer_value = 0.0;
+          //actuators[0] = 0.0;
+          double steer_value = -actuators[0]/ deg2rad(25);
           double throttle_value = actuators[1];
 
           json msgJson;
