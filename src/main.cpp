@@ -127,7 +127,7 @@ int main() {
           double des_psi = atan(coeffs[1]);
           double epsi = 0 - des_psi;
 
-          state << px,py,0.0,v,cte,epsi;
+          state << 0.0,0.0,0.0,v,cte,epsi;
 
 
 
@@ -140,8 +140,8 @@ int main() {
           */
 
           actuators = mpc.Solve(state, coeffs, act_init);
-          actuators[0] = -epsi/M_PI;
-          actuators[1] = 0.1;
+          // actuators[0] = -epsi/M_PI;
+          // actuators[1] = 0.1;
           double steer_value = -actuators[0]/ deg2rad(25);
           double throttle_value = actuators[1];
 
@@ -159,8 +159,13 @@ int main() {
           msgJson["mpc_y"] = mpc.mpc_y_vals;
 
           //Display the waypoints/reference line
-          vector<double> next_x_vals = ptsx;
-          vector<double> next_y_vals = ptsy;
+          vector<double> next_x_vals;
+          vector<double> next_y_vals;
+
+          for(int i = 0; i < 50; i+=2){
+            next_x_vals.push_back(i);
+            next_y_vals.push_back(polyeval(coeffs, i));
+          }
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
