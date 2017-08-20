@@ -4,24 +4,42 @@ Self-Driving Car Engineer Nanodegree Program
 ---
 
 
-## Dependencies
+## Implementation Details
 
-### Questions
+### The Model 
 
-#### Help
+The model is based on the class. The state includes the `x` and `y` coordinates, velocity, cross track error (y-axis distance between currrent location and desired location), epsi (error in the heading direction).
 
+All of the units are measured in the car coordinates, where the x axis points in the same direction the car is heading. This implies psi0, x0 and y0 are always 0. To achieve this the main.cpp function includes some preprocessing to waypoints to translate and rotate the waypoints. Once the waypoints are defined in car coordinates, we can fit a polynomial on them, so we can use the polynomial as a more detailed path to use as reference in the model predictive controller.
 
+The actuators of the car are a steering angle (limited to [-25, 25] degrees) and a throttle value which controls acceleration and deceleration in a range [-1, 1]. This are the two variables we can control to make the car follow the desired path described as waypoints in main.cpp by ptsx and ptsy.
 
+The equaitions we use to describe the relationships between our state variables and our actuators are from a kinematic model of a car. The equations can be observed in the code at MPC.cpp, lines 127 to 132. The equations are similar to the following pseudo code:
 
+```
+      x_[t+1]   = x[t] + v[t] * cos(psi[t]) * dt
+      y_[t+1]   = y[t] + v[t] * sin(psi[t]) * dt
+      psi_[t+1] = psi[t] + v[t] / Lf * delta[t] * dt
+      v_[t+1]   = v[t] + a[t] * dt
+      cte[t+1]  = polynomial_eval(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
+      epsi[t+1] = psi[t] - psi_desired[t] + v[t] * delta[t] / Lf * dt
+```
 
+### Timestep Length and Elapsed Duration (N & dt) 
 
+The class suggests to not go above 2 seconds over the horizon, so I used 2 seconds and it worked fine. I used dt of 0.1 seconds, which is the same as the actuator lag we will have to deal with later. 0.1s was enough, less thann this would make it hard to deal with the lag. with a dt of 0.1, the number of cycles we have to model is 20 (N = 20).
 
+### Polynomial Fitting and MPC Preprocessing 
 
+In main.cpp the waypoints are traslated to the car center and rotated, so the x axis points in the same direction as the car. The function that implements this is in `main.cpp` lines 70 to 77. 
 
+### Model Predictive Control with Latency 
 
+I modeled the latency by limiting the values the model can choose for  the first update. The actuators need to stay the same as the initial values for as long as the lag last. (With N = 20 and dt = 0.1 this means actuators[0] and actuators[1] are the same)
 
+This means that the actual result we need to give back in MPC::Solve() is the third actuator state, which is why the return statement uses `delta_start + lag_n` as the index to solution.x
 
-
+The limitation is locked in `MPC.cpp` lines 185 to 197. The fixed actuator value comes from main.cpp, where the actuator chosen is saved to be used as reference on future function calls. 
 
 
 
