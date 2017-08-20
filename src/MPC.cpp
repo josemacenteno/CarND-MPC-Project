@@ -54,20 +54,20 @@ class FG_eval {
     fg[0] = 0;
 
     // The part of the cost based on the reference state.
-    for (int t = 0; t < N; t++) {
+    for (unsigned int t = 0; t < N; t++) {
       fg[0] += CppAD::pow(vars[cte_start + t], 2);
       fg[0] += CppAD::pow(vars[epsi_start + t], 2);
       fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);
     }
 
     // Minimize the use of actuators.
-    for (int t = 0; t < N - 1; t++) {
+    for (unsigned int t = 0; t < N - 1; t++) {
       fg[0] += 500 * CppAD::pow(vars[delta_start + t], 2);
       fg[0] += 50 * CppAD::pow(vars[a_start + t], 2);
     }
 
     // Minimize the value gap between sequential actuations.
-    for (int t = 0; t < N - 2; t++) {
+    for (unsigned int t = 0; t < N - 2; t++) {
       fg[0] += 100 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
       fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
     }
@@ -90,7 +90,7 @@ class FG_eval {
     fg[1 + epsi_start] = vars[epsi_start];
 
     // The rest of the constraints
-    for (int t = 1; t < N; t++) {
+    for (unsigned int t = 1; t < N; t++) {
       // The state at time t+1 .
       AD<double> x1 = vars[x_start + t];
       AD<double> y1 = vars[y_start + t];
@@ -167,7 +167,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs, Eigen::
   // Initial value of the independent variables.
   // SHOULD BE 0 besides initial state.
   Dvector vars(n_vars);
-  for (int i = 0; i < n_vars; i++) {
+  for (unsigned int i = 0; i < n_vars; i++) {
     vars[i] = 0.0;
   }
   // Set the initial variable values
@@ -185,12 +185,12 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs, Eigen::
   // There is actuator lag, which means we can't modify actuators
   // a period at the beginig.
   int lag_n = (int) actuator_lag / dt;
-  for (int i = delta_start; i < delta_start + lag_n; ++i) {
+  for (unsigned int i = delta_start; i < delta_start + lag_n; ++i) {
     vars_lowerbound[i] = delta_fixed;
     vars_upperbound[i] = delta_fixed;
     vars[i] = delta_fixed;
   }
-  for (int i = a_start; i < a_start + lag_n; ++i) {
+  for (unsigned int i = a_start; i < a_start + lag_n; ++i) {
     vars_lowerbound[i] = a_fixed;
     vars_upperbound[i] = a_fixed;
     vars[i] = a_fixed;
@@ -198,21 +198,21 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs, Eigen::
   // The upper and lower limits of delta are set to -25 and 25
   // degrees (values in radians).
   // NOTE: Feel free to change this to something else.
-  for (int i = delta_start + lag_n; i < a_start; i++) {
+  for (unsigned int i = delta_start + lag_n; i < a_start; i++) {
     vars_lowerbound[i] = -0.436332;
     vars_upperbound[i] = 0.436332;
   }
 
   // Acceleration/decceleration upper and lower limits.
   // NOTE: Feel free to change this to something else.
-  for (int i = a_start + lag_n; i < n_vars; i++) {
+  for (unsigned int i = a_start + lag_n; i < n_vars; i++) {
     vars_lowerbound[i] = -1.0;
     vars_upperbound[i] = 1.0;
   }
 
   // Set all non-actuators upper and lowerlimits
   // to the max negative and positive values.
-  for (int i = 0; i < delta_start; i++) {
+  for (unsigned int i = 0; i < delta_start; i++) {
     vars_lowerbound[i] = -1.0e19;
     vars_upperbound[i] = 1.0e19;
   }
@@ -221,7 +221,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs, Eigen::
   // Should be 0 besides initial state.
   Dvector constraints_lowerbound(n_constraints);
   Dvector constraints_upperbound(n_constraints);
-  for (int i = 0; i < n_constraints; i++) {
+  for (unsigned int i = 0; i < n_constraints; i++) {
     constraints_lowerbound[i] = 0;
     constraints_upperbound[i] = 0;
   }
@@ -287,10 +287,10 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs, Eigen::
   //Report the mpc predicted points after solving the system
   mpc_x_vals.clear();
   mpc_y_vals.clear();
-  for(int i = x_start; i < x_start + N; ++i){
+  for(unsigned int i = x_start; i < x_start + N; ++i){
     mpc_x_vals.push_back(solution.x[i]);
   }
-  for(int i = y_start; i < y_start + N; ++i){
+  for(unsigned int i = y_start; i < y_start + N; ++i){
     mpc_y_vals.push_back(solution.x[i]);
   }
   return {solution.x[delta_start + lag_n],   solution.x[a_start + lag_n]};

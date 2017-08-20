@@ -36,7 +36,7 @@ string hasData(string s) {
 // Evaluate a polynomial.
 double polyeval(Eigen::VectorXd coeffs, double x) {
   double result = 0.0;
-  for (int i = 0; i < coeffs.size(); i++) {
+  for (unsigned int i = 0; i < coeffs.size(); i++) {
     result += coeffs[i] * pow(x, i);
   }
   return result;
@@ -46,17 +46,17 @@ double polyeval(Eigen::VectorXd coeffs, double x) {
 // Adapted from
 // https://github.com/JuliaMath/Polynomials.jl/blob/master/src/Polynomials.jl#L676-L716
 Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
-                        int order) {
+                        unsigned int order) {
   assert(xvals.size() == yvals.size());
   assert(order >= 1 && order <= xvals.size() - 1);
   Eigen::MatrixXd A(xvals.size(), order + 1);
 
-  for (int i = 0; i < xvals.size(); i++) {
+  for (unsigned int i = 0; i < xvals.size(); i++) {
     A(i, 0) = 1.0;
   }
 
-  for (int j = 0; j < xvals.size(); j++) {
-    for (int i = 0; i < order; i++) {
+  for (unsigned int j = 0; j < xvals.size(); j++) {
+    for (unsigned int i = 0; i < order; i++) {
       A(j, i + 1) = A(j, i) * xvals(j);
     }
   }
@@ -108,7 +108,7 @@ int main() {
           double psi = j[1]["psi"];
           // psi = psi + delta;
 
-          const int poly_order = 3;
+          const unsigned int poly_order = 3;
           Eigen::VectorXd state(6), coeffs(poly_order), act_init(3);
 
           act_init << delta, a, lag;
@@ -163,7 +163,7 @@ int main() {
           vector<double> next_x_vals;
           vector<double> next_y_vals;
 
-          for(int i = 0; i < 50; i+=2){
+          for(unsigned int i = 0; i < 50; i+=2){
             next_x_vals.push_back(i);
             next_y_vals.push_back(polyeval(coeffs, i));
           }
