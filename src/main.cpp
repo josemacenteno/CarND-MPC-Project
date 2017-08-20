@@ -102,10 +102,11 @@ int main() {
           vector<double> ptsy = j[1]["ptsy"];
           double px = j[1]["x"];
           double py = j[1]["y"];
-          double psi = j[1]["psi"];
           double v = mph2mps(j[1]["speed"]);
           double delta = actuators[0];
           double a = actuators[1];
+          double psi = j[1]["psi"];
+          // psi = psi + delta;
 
           const int poly_order = 3;
           Eigen::VectorXd state(6), coeffs(poly_order), act_init(3);
